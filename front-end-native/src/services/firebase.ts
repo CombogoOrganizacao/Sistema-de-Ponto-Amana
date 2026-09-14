@@ -5,13 +5,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyD3Tjefzcy-YxOr3c8YJ91HhH8AO3r1LuY",
-  authDomain: "combogoponto.firebaseapp.com",
-  projectId: "combogoponto",
-  storageBucket: "combogoponto.firebasestorage.app",
-  messagingSenderId: "20657185811",
-  appId: "1:20657185811:web:21b6111d7a29b370a20be6",
-  measurementId: "G-BJZKEBN9FH"
+  apiKey: "AIzaSyBb7pTGduRDMY_y6rGrk5If9tIaLWV7X3c",
+  authDomain: "amana-ponto.firebaseapp.com",
+  projectId: "amana-ponto",
+  storageBucket: "amana-ponto.firebasestorage.app",
+  messagingSenderId: "242866393115",
+  appId: "1:242866393115:web:580d5c66a98f256667a8be"
 };
 
 // Inicializa o App do Firebase (evita recriar em reloads)
