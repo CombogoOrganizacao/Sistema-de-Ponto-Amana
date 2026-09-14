@@ -7,9 +7,9 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/11.4.0/firebase
 // ==========================================
 export const firebaseConfig = {
   apiKey: "AIzaSyD3Tjefzcy-YxOr3c8YJ91HhH8AO3r1LuY",
-  authDomain: "Amana Lab.firebaseapp.com",
-  projectId: "Amana Lab",
-  storageBucket: "Amana Lab.firebasestorage.app",
+  authDomain: "combogoponto.firebaseapp.com",
+  projectId: "combogoponto",
+  storageBucket: "combogoponto.firebasestorage.app",
   messagingSenderId: "20657185811",
   appId: "1:20657185811:web:21b6111d7a29b370a20be6",
   measurementId: "G-BJZKEBN9FH"
@@ -20,7 +20,7 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 
 // E-mail Master de Administrador
-export const ADMIN_EMAIL = "Amana Lab@gmail.com";
+export const ADMIN_EMAIL = "combogounicap@gmail.com";
 
 // ==========================================
 // PONTOS GEOFENCE PERMITIDOS (UNICAP & MUSEU)
