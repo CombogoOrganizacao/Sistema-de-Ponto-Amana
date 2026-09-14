@@ -1,0 +1,17 @@
+{
+  "name": "Amana Lab Ponto",
+  "short_name": "Amana Lab",
+  "description": "Sistema de Ponto Eletrônico Amana Lab",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#030712",
+  "theme_color": "#f97316",
+  "icons": [
+    {
+      "src": "./Marcas Amana_Lab-negativo.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

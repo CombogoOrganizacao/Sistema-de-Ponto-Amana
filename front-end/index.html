@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full antialiased dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Combogó Ponto - Sistema de Ponto Eletrônico</title>
+  
+  <!-- PWA Meta Tags -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#f97316" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Combogó Ponto" />
+  <link rel="apple-touch-icon" href="Marcas Amana_Lab-negativo.png" />
+  <link rel="icon" type="image/svg+xml" href="Marcas Amana_Lab-negativo.png" />
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Lucide Icons (Professional Icons) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              400: '#fb923c',
+              500: '#f97316',
+              600: '#ea580c',
+              700: '#c2410c'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Estilos Customizados Isolados -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="min-h-full flex flex-col bg-gray-950 text-gray-100 p-4 sm:p-8 lg:p-12 relative overflow-x-hidden">
+
+  <!-- Toast de Instalação Mobile (PWA) -->
+  <div id="pwa-toast" class="hidden fixed top-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50 bg-gray-900/95 backdrop-blur-md border border-orange-500/40 p-4 rounded-2xl shadow-2xl animate-slide-down">
+    <div class="flex items-start gap-3">
+      <div class="p-2.5 bg-orange-500/10 text-orange-400 rounded-xl border border-orange-500/20 shrink-0">
+        <i data-lucide="smartphone" class="w-6 h-6"></i>
+      </div>
+      <div class="flex-1">
+        <h4 class="text-sm font-bold text-white flex items-center gap-1.5">
+          Instalar Combogó Ponto
+        </h4>
+        <p class="text-xs text-gray-300 mt-1 leading-relaxed">
+          Adicione à tela inicial para bater e acompanhar o ponto como um aplicativo direto no seu smartphone.
+        </p>
+        <div class="mt-3 flex items-center gap-2">
+          <button id="btn-open-install-guide" class="text-xs bg-orange-500 hover:bg-orange-600 font-semibold px-3 py-1.5 rounded-lg text-white transition flex items-center gap-1">
+            <i data-lucide="help-circle" class="w-3.5 h-3.5"></i>
+            Como instalar
+          </button>
+          <button id="btn-dismiss-pwa" class="text-xs text-gray-400 hover:text-gray-200 px-2 py-1.5 transition">
+            Agora não
+          </button>
+        </div>
+      </div>
+      <button id="btn-close-toast" class="text-gray-400 hover:text-gray-200 p-1">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal Tutorial de Instalação no Celular -->
+  <div id="install-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto animate-fade-in custom-scrollbar">
+      <div class="flex justify-between items-center pb-4 mb-4 border-b border-gray-800">
+        <div class="flex items-center gap-2 text-white font-bold text-base">
+          <i data-lucide="download" class="w-5 h-5 text-orange-400"></i>
+          Instalar no Smartphone
+        </div>
+        <button id="btn-close-modal" class="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Abas iPhone / Android -->
+      <div class="flex rounded-xl bg-gray-950 p-1 mb-5 border border-gray-800">
+        <button id="tab-ios" class="flex-1 py-2 text-xs font-semibold rounded-lg bg-orange-500 text-white transition flex items-center justify-center gap-2">
+          <i data-lucide="apple" class="w-4 h-4"></i>
+          iPhone (Safari)
+        </button>
+        <button id="tab-android" class="flex-1 py-2 text-xs font-semibold rounded-lg text-gray-400 hover:text-white transition flex items-center justify-center gap-2">
+          <i data-lucide="smartphone" class="w-4 h-4"></i>
+          Android (Chrome)
+        </button>
+      </div>
+
+      <!-- Conteúdo iPhone -->
+      <div id="content-ios" class="space-y-4 text-xs text-gray-300">
+        <div class="flex items-start gap-3 bg-gray-950/60 p-3 rounded-xl border border-gray-800/80">
+          <span class="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 font-bold flex items-center justify-center shrink-0">1</span>
+          <div>
+            <p class="font-medium text-white">Abra no navegador Safari</p>
+            <p class="text-gray-400 mt-0.5">Certifique-se de estar utilizando o Safari no seu iPhone.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3 bg-gray-950/60 p-3 rounded-xl border border-gray-800/80">
+          <span class="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 font-bold flex items-center justify-center shrink-0">2</span>
+          <div>
+            <p class="font-medium text-white flex items-center gap-1.5">
+              Toque no botão Compartilhar
+              <span class="inline-flex p-1 bg-gray-800 rounded border border-gray-700 text-blue-400">
+                <i data-lucide="share" class="w-3.5 h-3.5"></i>
+              </span>
+            </p>
+            <p class="text-gray-400 mt-0.5">Fica na barra inferior do navegador no iPhone.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3 bg-gray-950/60 p-3 rounded-xl border border-gray-800/80">
+          <span class="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 font-bold flex items-center justify-center shrink-0">3</span>
+          <div>
+            <p class="font-medium text-white flex items-center gap-1.5">
+              Selecione "Adicionar à Tela de Início"
+              <span class="inline-flex p-1 bg-gray-800 rounded border border-gray-700 text-orange-400">
+                <i data-lucide="plus-square" class="w-3.5 h-3.5"></i>
+              </span>
+            </p>
+            <p class="text-gray-400 mt-0.5">Role as opções para baixo até encontrar o ícone de adição.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Conteúdo Android -->
+      <div id="content-android" class="hidden space-y-4 text-xs text-gray-300">
+        <div class="flex items-start gap-3 bg-gray-950/60 p-3 rounded-xl border border-gray-800/80">
+          <span class="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 font-bold flex items-center justify-center shrink-0">1</span>
+          <div>
+            <p class="font-medium text-white">Abra no Google Chrome</p>
+            <p class="text-gray-400 mt-0.5">Acesse o site usando o navegador Chrome no Android.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3 bg-gray-950/60 p-3 rounded-xl border border-gray-800/80">
+          <span class="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 font-bold flex items-center justify-center shrink-0">2</span>
+          <div>
+            <p class="font-medium text-white flex items-center gap-1.5">
+              Toque no Menu de três pontos
+              <span class="inline-flex p-1 bg-gray-800 rounded border border-gray-700 text-white">
+                <i data-lucide="more-vertical" class="w-3.5 h-3.5"></i>
+              </span>
+            </p>
+            <p class="text-gray-400 mt-0.5">Localizado no canto superior direito da tela.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3 bg-gray-950/60 p-3 rounded-xl border border-gray-800/80">
+          <span class="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 font-bold flex items-center justify-center shrink-0">3</span>
+          <div>
+            <p class="font-medium text-white flex items-center gap-1.5">
+              Toque em "Instalar aplicativo" ou "Adicionar à tela inicial"
+              <span class="inline-flex p-1 bg-gray-800 rounded border border-gray-700 text-orange-400">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              </span>
+            </p>
+            <p class="text-gray-400 mt-0.5">Confirme a instalação e o app aparecerá na tela do seu aparelho.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6">
+        <button id="btn-modal-ok" class="w-full py-2.5 bg-orange-500 hover:bg-orange-600 font-semibold rounded-xl text-white transition text-xs">
+          Entendi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Obrigatório de Seleção de Curso (1ª vez / Google Login) -->
+  <div id="curso-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-fade-in">
+      <div class="flex flex-col items-center text-center mb-5">
+        <div class="p-3 bg-orange-500/10 text-orange-400 rounded-2xl border border-orange-500/20 mb-3">
+          <i data-lucide="graduation-cap" class="w-8 h-8"></i>
+        </div>
+        <h3 class="text-lg font-bold text-white">Selecione seu Curso</h3>
+        <p class="text-xs text-gray-400 mt-1">
+          Precisamos registrar seu curso para definir o horário de ponto e tolerâncias. <strong class="text-orange-400">Esta escolha é única e não poderá ser alterada.</strong>
+        </p>
+      </div>
+
+      <div id="curso-modal-error" class="hidden mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs"></div>
+
+      <div class="space-y-3">
+        <label class="block text-xs font-semibold text-gray-400 mb-1">Qual o seu curso?</label>
+        <select
+          id="modal-select-curso"
+          class="w-full px-4 py-3 bg-gray-950 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500 cursor-pointer"
+        >
+          <option value="" disabled selected>Escolha um curso</option>
+          <option value="Jogos Digitais">Jogos Digitais (Jornada: 14h às 16h)</option>
+          <option value="Ciência da Computação">Ciência da Computação (Jornada: 14h às 17h)</option>
+          <option value="Sistemas para Internet">Sistemas para Internet (Jornada: 14h às 17h)</option>
+        </select>
+
+        <div class="p-3 bg-gray-950/60 rounded-xl border border-gray-800 text-[11px] text-gray-400 space-y-1 mt-3">
+          <p class="flex items-center gap-1.5 font-medium text-gray-300">
+            <i data-lucide="info" class="w-3.5 h-3.5 text-orange-400 shrink-0"></i>
+            Regras de Horário e Tolerância:
+          </p>
+          <p>• <strong>Entrada:</strong> 14:00 (Tolerância de 20 min: entre 13:40 e 14:20)</p>
+          <p>• <strong>Saída Jogos:</strong> 16:00 (Tolerância de 20 min: entre 15:40 e 16:20)</p>
+          <p>• <strong>Saída CC / Sistemas:</strong> 17:00 (Tolerância de 20 min: entre 16:40 e 17:20)</p>
+        </div>
+
+        <button
+          id="btn-confirmar-curso"
+          class="w-full py-3 bg-orange-500 hover:bg-orange-600 font-bold rounded-xl text-white transition mt-4 shadow-lg shadow-orange-500/20 text-sm flex items-center justify-center gap-2"
+        >
+          <i data-lucide="check" class="w-4 h-4"></i>
+          <span>Confirmar e Continuar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-5xl mx-auto w-full flex-1 flex flex-col">
+    <!-- Header -->
+    <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6 mb-8 border-b border-gray-800">
+      <div class="flex items-center gap-3">
+        <img src="Marcas Amana_Lab-negativo.png" alt="Combogó Logo" class="w-10 h-10 object-contain drop-shadow-md rounded-lg" />
+        <div>
+          <h1 class="text-xl sm:text-2xl font-bold bg-gradient-to-r from-orange-400 to-amber-500 bg-clip-text text-transparent flex items-center gap-2">
+            Combogó Ponto
+          </h1>
+          <p class="text-xs text-gray-400">Sistema de Ponto & Gestão Integrada</p>
+        </div>
+      </div>
+
+      <div id="user-header" class="hidden w-full sm:w-auto flex items-center justify-between sm:justify-end gap-3 bg-gray-900/60 p-2 sm:p-0 rounded-xl sm:bg-transparent border sm:border-0 border-gray-800">
+        <div class="text-left sm:text-right">
+          <p id="header-user-name" class="font-semibold text-sm text-white truncate max-w-[180px] sm:max-w-[240px]">Carregando...</p>
+          <div class="flex items-center gap-1.5 sm:justify-end mt-0.5">
+            <span id="header-user-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-500/10 text-orange-400 border border-orange-500/20 uppercase tracking-wider">
+              Aluno
+            </span>
+          </div>
+        </div>
+        <button
+          id="btn-logout"
+          class="px-3.5 py-2 text-xs bg-red-500/10 text-red-400 border border-red-500/30 rounded-xl hover:bg-red-500/20 transition flex items-center gap-1.5 font-medium"
+        >
+          <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+          <span>Sair</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Loading Spinner -->
+    <div id="loading-container" class="flex items-center justify-center py-24 flex-1">
+      <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-orange-500"></div>
+    </div>
+
+    <!-- Auth Card (Login / Cadastro) -->
+    <div id="auth-section" class="hidden max-w-md mx-auto w-full bg-gray-900 border border-gray-800 p-6 sm:p-8 rounded-2xl shadow-2xl my-auto animate-fade-in">
+      <div class="flex flex-col items-center text-center mb-6">
+        <img src="Marcas Amana_Lab-negativo.png" alt="Combogó Logo" class="w-16 h-16 object-contain mb-3 drop-shadow-lg" />
+        <h2 id="auth-title" class="text-xl font-bold text-white">
+          Acessar Painel
+        </h2>
+        <p class="text-xs text-gray-400 mt-1">
+          Entre com sua conta institucional ou cadastrada
+        </p>
+      </div>
+
+      <div id="auth-error" class="hidden mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs flex items-center gap-2">
+        <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+        <span id="auth-error-msg"></span>
+      </div>
+
+      <form id="auth-form" class="flex flex-col gap-4">
+        <div id="nome-group" class="hidden flex flex-col gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 mb-1">Nome Completo</label>
+            <div class="relative">
+              <i data-lucide="user" class="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5"></i>
+              <input
+                type="text"
+                id="input-nome"
+                placeholder="Seu nome"
+                class="w-full pl-10 pr-4 py-3 bg-gray-950 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500 transition"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 mb-1">Curso / Graduação</label>
+            <div class="relative">
+              <i data-lucide="graduation-cap" class="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5"></i>
+              <select
+                id="input-curso"
+                class="w-full pl-10 pr-4 py-3 bg-gray-950 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500 transition cursor-pointer appearance-none"
+              >
+                <option value="" disabled selected>Selecione seu curso</option>
+                <option value="Jogos Digitais">Jogos Digitais (14h às 16h)</option>
+                <option value="Ciência da Computação">Ciência da Computação (14h às 17h)</option>
+                <option value="Sistemas para Internet">Sistemas para Internet (14h às 17h)</option>
+              </select>
+              <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 absolute right-3.5 top-3.5 pointer-events-none"></i>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-400 mb-1">E-mail</label>
+          <div class="relative">
+            <i data-lucide="mail" class="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5"></i>
+            <input
+              type="email"
+              id="input-email"
+              required
+              placeholder="email@empresa.com"
+              class="w-full pl-10 pr-4 py-3 bg-gray-950 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500 transition"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-400 mb-1">Senha</label>
+          <div class="relative">
+            <i data-lucide="lock" class="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5"></i>
+            <input
+              type="password"
+              id="input-senha"
+              required
+              placeholder="••••••••"
+              class="w-full pl-10 pr-4 py-3 bg-gray-950 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500 transition"
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          id="btn-auth-submit"
+          class="w-full py-3 bg-orange-500 hover:bg-orange-600 font-semibold rounded-xl text-white transition mt-2 shadow-lg shadow-orange-500/20 text-sm flex items-center justify-center gap-2"
+        >
+          <i data-lucide="log-in" class="w-4 h-4"></i>
+          <span>Entrar</span>
+        </button>
+      </form>
+
+      <div class="flex items-center my-6 gap-3">
+        <div class="flex-1 h-px bg-gray-800"></div>
+        <span class="text-xs text-gray-500 font-medium">OU</span>
+        <div class="flex-1 h-px bg-gray-800"></div>
+      </div>
+
+      <button
+        id="btn-google-login"
+        type="button"
+        class="w-full py-3 bg-gray-800 hover:bg-gray-750 border border-gray-700 font-medium rounded-xl flex items-center justify-center gap-2.5 transition text-white text-sm"
+      >
+        <svg class="w-4 h-4" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+        </svg>
+        <span>Continuar com Google</span>
+      </button>
+
+      <button
+        id="btn-toggle-auth"
+        type="button"
+        class="w-full mt-6 text-center text-xs text-orange-400 hover:underline font-medium"
+      >
+        Novo por aqui? Crie uma conta
+      </button>
+    </div>
+
+    <!-- Dashboard Principal -->
+    <div id="dashboard-section" class="hidden space-y-6 animate-fade-in">
+      
+      <!-- Navegação de Abas do Painel -->
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-800 pb-3">
+        <div class="flex items-center gap-2">
+          <button id="tab-nav-pontos" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-orange-500 text-white transition flex items-center gap-2">
+            <i data-lucide="clock" class="w-4 h-4"></i>
+            <span>Registros de Ponto</span>
+          </button>
+          
+          <button id="tab-nav-admin" class="hidden px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-gray-900 text-gray-400 hover:text-white border border-gray-800 transition flex items-center gap-2">
+            <i data-lucide="shield-check" class="w-4 h-4 text-orange-400"></i>
+            <span>Painel Administrativo</span>
+          </button>
+        </div>
+
+        <div id="quick-stats" class="text-xs text-gray-400 flex items-center gap-2 bg-gray-900/60 px-3 py-1.5 rounded-xl border border-gray-800">
+          <i data-lucide="hourglass" class="w-3.5 h-3.5 text-orange-400"></i>
+          <span>Suas horas totais: <strong id="user-total-hours" class="text-white">0h 00m</strong></span>
+        </div>
+      </div>
+
+      <!-- SEÇÃO 1: REGISTROS DE PONTO -->
+      <div id="view-pontos-section" class="space-y-6">
+        
+        <!-- Card de Bater Ponto (Web e Mobile PWA com Geofence) -->
+        <div class="bg-gray-900 border border-gray-800 p-5 sm:p-6 rounded-2xl shadow-xl">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+            <div>
+              <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="clock" class="w-4 h-4 text-orange-400"></i>
+                <span>Registrar Ponto Agora</span>
+              </h3>
+              <p class="text-xs text-gray-400 mt-0.5">
+                Curso: <strong id="card-user-curso" class="text-white">Carregando...</strong> | 
+                Expediente: <span id="card-user-horario" class="text-orange-400 font-medium">14h às 17h (±20 min)</span>
+              </p>
+            </div>
+            <div id="ponto-status-msg" class="hidden text-xs font-medium px-3 py-1.5 rounded-xl"></div>
+          </div>
+
+          <!-- Status de Localização / Geofence -->
+          <div id="geo-status-box" class="mb-4 p-3 bg-gray-950 border border-gray-800 rounded-xl flex items-center justify-between gap-3 text-xs">
+            <div class="flex items-center gap-2 text-gray-300">
+              <span id="geo-status-dot" class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+              <span id="geo-status-text">Verificando sua localização GPS...</span>
+            </div>
+            <button id="btn-refresh-location" class="text-orange-400 hover:text-orange-300 font-semibold flex items-center gap-1">
+              <i data-lucide="crosshair" class="w-3.5 h-3.5"></i>
+              Atualizar Local
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <button
+              id="btn-bater-entrada"
+              class="py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] font-bold text-sm text-white rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40"
+            >
+              <i data-lucide="arrow-down-left" class="w-5 h-5"></i>
+              <span>Bater Entrada</span>
+            </button>
+
+            <button
+              id="btn-bater-saida"
+              class="py-3.5 px-4 bg-rose-600 hover:bg-rose-500 active:scale-[0.98] font-bold text-sm text-white rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-rose-950/40"
+            >
+              <i data-lucide="arrow-up-right" class="w-5 h-5"></i>
+              <span>Bater Saída</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEÇÃO 2: PAINEL ADMINISTRATIVO (EXCLUSIVO ADMIN) -->
+      <div id="view-admin-section" class="hidden space-y-6">
+        
+        <!-- Cards de Resumo Admin -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="bg-gray-900 border border-gray-800 p-5 rounded-2xl flex items-center gap-4">
+            <div class="p-3 bg-orange-500/10 text-orange-400 rounded-xl border border-orange-500/20">
+              <i data-lucide="users" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400">Total de Usuários</p>
+              <h4 id="stat-total-users" class="text-xl font-bold text-white mt-0.5">0</h4>
+            </div>
+          </div>
+
+          <div class="bg-gray-900 border border-gray-800 p-5 rounded-2xl flex items-center gap-4">
+            <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
+              <i data-lucide="check-circle" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400">Pontos Hoje</p>
+              <h4 id="stat-points-today" class="text-xl font-bold text-white mt-0.5">0</h4>
+            </div>
+          </div>
+
+          <div class="bg-gray-900 border border-gray-800 p-5 rounded-2xl flex items-center gap-4">
+            <div class="p-3 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/20">
+              <i data-lucide="clock" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400">Horas Acumuladas Gerais</p>
+              <h4 id="stat-total-hours-all" class="text-xl font-bold text-white mt-0.5">0h</h4>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gestão de Usuários & Horas Acumuladas -->
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+          <div class="p-4 sm:p-5 border-b border-gray-800 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+            <div>
+              <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="user-cog" class="w-4 h-4 text-orange-400"></i>
+                <span>Gestão de Cargos e Horas Acumuladas</span>
+              </h3>
+              <p class="text-xs text-gray-400 mt-0.5">Altere permissões e visualize o total de horas calculadas por usuário</p>
+            </div>
+            <div>
+              <button
+                id="btn-reset-all-points"
+                class="px-3.5 py-2 text-xs bg-red-500/10 text-red-400 border border-red-500/30 rounded-xl hover:bg-red-500/20 transition flex items-center gap-1.5 font-semibold"
+                title="Apaga todos os registros de ponto do sistema e zera as horas acumuladas"
+              >
+                <i data-lucide="trash" class="w-3.5 h-3.5"></i>
+                <span>Zerar Todos os Pontos e Horas</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-left text-xs sm:text-sm text-gray-300">
+              <thead class="bg-gray-950/60 text-gray-400 uppercase text-[10px] sm:text-xs">
+                <tr>
+                  <th class="px-4 py-3.5">Nome / E-mail</th>
+                  <th class="px-4 py-3.5">Horas Acumuladas</th>
+                  <th class="px-4 py-3.5">Cargo Atual</th>
+                  <th class="px-4 py-3.5 text-right">Alterar Cargo</th>
+                </tr>
+              </thead>
+              <tbody id="admin-users-tbody" class="divide-y divide-gray-800/50">
+                <!-- Renderizado via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Filtros de Data (Exclusivo Admin) -->
+        <div class="bg-gray-900 border border-gray-800 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-2 text-sm font-semibold text-white">
+            <i data-lucide="calendar" class="w-4 h-4 text-orange-400"></i>
+            <span>Auditoria: Filtrar Registros de Ponto por Data</span>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <input
+              type="date"
+              id="filter-date"
+              class="px-3 py-2 bg-gray-950 border border-gray-700 rounded-xl text-white text-xs focus:outline-none focus:border-orange-500"
+            />
+            <button
+              id="btn-clear-filter"
+              class="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-xs font-medium border border-gray-700 transition flex items-center gap-1"
+            >
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+              Limpar
+            </button>
+          </div>
+        </div>
+
+        <!-- Histórico Geral de Registros de Ponto (Exclusivo Admin) -->
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+          <div class="p-4 sm:p-5 border-b border-gray-800 flex justify-between items-center">
+            <div>
+              <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="list" class="w-4 h-4 text-orange-400"></i>
+                <span>Histórico Completo de Registros de Ponto</span>
+              </h3>
+              <p class="text-xs text-gray-400 mt-0.5">Visão detalhada de todas as entradas e saídas de todos os alunos</p>
+            </div>
+            <span id="pontos-count" class="text-xs px-2.5 py-1 rounded-full bg-gray-800 text-gray-400 border border-gray-700">0 registros</span>
+          </div>
+
+          <div id="empty-state" class="hidden text-center py-16 px-4">
+            <div class="w-12 h-12 rounded-full bg-gray-800/80 text-gray-500 flex items-center justify-center mx-auto mb-3">
+              <i data-lucide="inbox" class="w-6 h-6"></i>
+            </div>
+            <p class="text-sm text-gray-400">Nenhum registro de ponto encontrado para este período.</p>
+          </div>
+
+          <div id="table-wrapper" class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-left text-xs sm:text-sm text-gray-300">
+              <thead class="bg-gray-950/60 text-gray-400 uppercase text-[10px] sm:text-xs">
+                <tr>
+                  <th class="px-4 py-3.5">Tipo</th>
+                  <th class="px-4 py-3.5">Colaborador / Aluno</th>
+                  <th class="px-4 py-3.5">Localização</th>
+                  <th class="px-4 py-3.5">Data & Hora</th>
+                </tr>
+              </thead>
+              <tbody id="pontos-tbody" class="divide-y divide-gray-800/50">
+                <!-- Linhas inseridas dinamicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Script Modular Externo -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
