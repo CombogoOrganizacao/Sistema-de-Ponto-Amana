@@ -132,8 +132,10 @@ export function renderPontosTable(pontos, pontosTbody, emptyState, pontosCount, 
 // ==========================================
 // RENDERIZAÇÃO DA TABELA DE USUÁRIOS (ADMIN)
 // ==========================================
-export function renderAdminUsersTable(users, allPontos, adminUsersTbody) {
+export function renderAdminUsersTable(users, allPontos, adminUsersTbody, currentUserProfile = null) {
   if (!adminUsersTbody) return;
+
+  const isCurrentAdmin = currentUserProfile && currentUserProfile.cargo === "admin";
 
   adminUsersTbody.innerHTML = users.map(u => {
     const pontosUser = allPontos.filter(p => p.usuarioId === u.uid);
@@ -159,39 +161,45 @@ export function renderAdminUsersTable(users, allPontos, adminUsersTbody) {
           </span>
         </td>
         <td class="px-4 py-3.5 whitespace-nowrap text-right">
-          <button
-            data-uid="${u.uid}"
-            data-current-role="${u.cargo || 'aluno'}"
-            class="btn-toggle-user-role px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
-              isAdmin 
-                ? "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700" 
-                : "bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 border border-orange-500/40"
-            }"
-          >
-            ${isAdmin ? "Tornar Aluno" : "Promover a Admin"}
-          </button>
+          ${isCurrentAdmin ? `
+            <button
+              data-uid="${u.uid}"
+              data-current-role="${u.cargo || 'aluno'}"
+              class="btn-toggle-user-role px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                isAdmin 
+                  ? "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700" 
+                  : "bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 border border-orange-500/40"
+              }"
+            >
+              ${isAdmin ? "Tornar Aluno" : "Promover a Admin"}
+            </button>
+          ` : `
+            <span class="text-xs text-gray-500 italic">Somente Admin</span>
+          `}
         </td>
       </tr>
     `;
   }).join("");
 
-  // Attach event listeners para toggle de cargo
-  adminUsersTbody.querySelectorAll(".btn-toggle-user-role").forEach(btn => {
-    btn.addEventListener("click", async (e) => {
-      const uid = btn.getAttribute("data-uid");
-      const currentRole = btn.getAttribute("data-current-role");
-      const newRole = currentRole === "admin" ? "aluno" : "admin";
-      
-      btn.disabled = true;
-      try {
-        await updateDoc(doc(db, "usuarios", uid), { cargo: newRole });
-      } catch (err) {
-        alert("Erro ao alterar cargo: " + err.message);
-      } finally {
-        btn.disabled = false;
-      }
+  if (isCurrentAdmin) {
+    // Attach event listeners para toggle de cargo apenas se for Admin
+    adminUsersTbody.querySelectorAll(".btn-toggle-user-role").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        const uid = btn.getAttribute("data-uid");
+        const currentRole = btn.getAttribute("data-current-role");
+        const newRole = currentRole === "admin" ? "aluno" : "admin";
+        
+        btn.disabled = true;
+        try {
+          await updateDoc(doc(db, "usuarios", uid), { cargo: newRole });
+        } catch (err) {
+          alert("Erro ao alterar cargo: " + err.message);
+        } finally {
+          btn.disabled = false;
+        }
+      });
     });
-  });
+  }
 
   renderIcons();
 }

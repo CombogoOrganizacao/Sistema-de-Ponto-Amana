@@ -552,7 +552,7 @@ function syncRealtimeData() {
     statTotalHoursAll.textContent = `${totalH}h`;
 
     if (allUsersData.length > 0) {
-      renderAdminUsersTable(allUsersData, allPontosData, adminUsersTbody);
+      renderAdminUsersTable(allUsersData, allPontosData, adminUsersTbody, currentUserProfile);
     }
   });
 
@@ -561,7 +561,7 @@ function syncRealtimeData() {
   unsubscribeUsers = onSnapshot(usersQuery, (snap) => {
     allUsersData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     statTotalUsers.textContent = allUsersData.length;
-    renderAdminUsersTable(allUsersData, allPontosData, adminUsersTbody);
+    renderAdminUsersTable(allUsersData, allPontosData, adminUsersTbody, currentUserProfile);
   });
 }
 
@@ -581,14 +581,24 @@ onAuthStateChanged(auth, async (user) => {
 
     if (userSnap.exists()) {
       currentUserProfile = userSnap.data();
+      // Garante que o e-mail master sempre tenha cargo admin
+      if (user.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase() && currentUserProfile.cargo !== "admin") {
+        currentUserProfile.cargo = "admin";
+        await updateDoc(userDocRef, { cargo: "admin" });
+      }
     } else {
+      const isMasterAdmin = (user.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
       currentUserProfile = {
         uid: user.uid,
         nome: user.displayName || "Usuário",
         email: user.email,
-        cargo: user.email === ADMIN_EMAIL ? "admin" : "aluno",
+        cargo: isMasterAdmin ? "admin" : "aluno",
         curso: ""
       };
+      await setDoc(userDocRef, {
+        ...currentUserProfile,
+        criadoEm: serverTimestamp()
+      });
     }
 
     authSection.classList.add("hidden");
