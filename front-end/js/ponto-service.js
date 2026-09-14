@@ -69,6 +69,7 @@ export async function registrarPontoWeb({
   currentUserData,
   currentUserProfile,
   allPontosData,
+  listaCursos = [],
   btnBaterEntrada,
   btnBaterSaida,
   geoStatusDot,
@@ -112,7 +113,7 @@ export async function registrarPontoWeb({
       return;
     }
 
-    const validacaoHorario = validarHorarioPonto(tipo, curso, isAdmin, dataOficial);
+    const validacaoHorario = validarHorarioPonto(tipo, curso, isAdmin, dataOficial, listaCursos);
     if (!validacaoHorario.valido) {
       showPontoStatus(validacaoHorario.motivo, true);
       atualizarEstadoBotoesPonto(currentUserData, allPontosData, btnBaterEntrada, btnBaterSaida);

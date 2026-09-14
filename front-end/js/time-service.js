@@ -76,53 +76,74 @@ export function obterMinutosDoDia(dateObj) {
   return { hora, minuto, totalMinutos: hora * 60 + minuto };
 }
 
-export function validarHorarioPonto(tipo, curso, isAdmin, dateOficial) {
+// Converte string "HH:MM" para minutos do dia
+export function parseHoraParaMinutos(horaStr, padraoMinutos) {
+  if (!horaStr || typeof horaStr !== 'string') return padraoMinutos;
+  const partes = horaStr.split(':');
+  if (partes.length < 2) return padraoMinutos;
+  const h = parseInt(partes[0], 10);
+  const m = parseInt(partes[1], 10);
+  if (isNaN(h) || isNaN(m)) return padraoMinutos;
+  return h * 60 + m;
+}
+
+export function validarHorarioPonto(tipo, cursoNome, isAdmin, dateOficial, listaCursos = []) {
   if (isAdmin) return { valido: true };
 
   const { hora, minuto, totalMinutos: currentMinutes } = obterMinutosDoDia(dateOficial);
   const agoraStr = `${String(hora).padStart(2, '0')}:${String(minuto).padStart(2, '0')}`;
 
+  // Busca configuração do curso se existir
+  const cursoConfig = listaCursos.find(c => (c.nome || "").toLowerCase().trim() === (cursoNome || "").toLowerCase().trim());
+
+  // Horários configurados ou padrões (Entrada padrão: 14:00 | Saída padrão: 17:00 / 16:00 para Jogos)
+  let horaEntradaAlvoMin = 14 * 60; // 14:00
+  let horaSaidaAlvoMin = (cursoNome || "").toLowerCase().includes("jogos") ? (16 * 60) : (17 * 60);
+  let toleranciaMin = 20;
+
+  if (cursoConfig) {
+    if (cursoConfig.horaEntrada) {
+      horaEntradaAlvoMin = parseHoraParaMinutos(cursoConfig.horaEntrada, horaEntradaAlvoMin);
+    }
+    if (cursoConfig.horaSaida) {
+      horaSaidaAlvoMin = parseHoraParaMinutos(cursoConfig.horaSaida, horaSaidaAlvoMin);
+    }
+    if (typeof cursoConfig.toleranciaMinutos === 'number') {
+      toleranciaMin = cursoConfig.toleranciaMinutos;
+    }
+  }
+
   if (tipo === "entrada") {
-    // 14:00 -> 840 min. Tolerância: 13:40 (820 min) até 14:20 (860 min)
-    const minEntrada = 13 * 60 + 40;
-    const maxEntrada = 14 * 60 + 20;
+    const minEntrada = horaEntradaAlvoMin - toleranciaMin;
+    const maxEntrada = horaEntradaAlvoMin + toleranciaMin;
+
+    const minStr = `${String(Math.floor(minEntrada / 60)).padStart(2, '0')}:${String(minEntrada % 60).padStart(2, '0')}`;
+    const maxStr = `${String(Math.floor(maxEntrada / 60)).padStart(2, '0')}:${String(maxEntrada % 60).padStart(2, '0')}`;
+    const alvoStr = `${String(Math.floor(horaEntradaAlvoMin / 60)).padStart(2, '0')}:${String(horaEntradaAlvoMin % 60).padStart(2, '0')}`;
 
     if (currentMinutes < minEntrada || currentMinutes > maxEntrada) {
       return {
         valido: false,
-        motivo: `Horário de Entrada não permitido (Hora Oficial: ${agoraStr}). O ponto de entrada só pode ser registrado entre 13:40 e 14:20 (tolerância de 20 min para as 14h).`
+        motivo: `Horário de Entrada não permitido (Hora Oficial: ${agoraStr}). O ponto de entrada deve ser registrado entre ${minStr} e ${maxStr} (tolerância de ${toleranciaMin} min para as ${alvoStr}).`
       };
     }
     return { valido: true };
   }
 
   if (tipo === "saida") {
-    const isJogos = (curso || "").toLowerCase().includes("jogos");
-    
-    if (isJogos) {
-      // 16:00 -> 960 min. Tolerância: 15:40 (940 min) até 16:20 (980 min)
-      const minSaidaJogos = 15 * 60 + 40;
-      const maxSaidaJogos = 16 * 60 + 20;
+    const minSaida = horaSaidaAlvoMin - toleranciaMin;
+    const maxSaida = horaSaidaAlvoMin + toleranciaMin;
 
-      if (currentMinutes < minSaidaJogos || currentMinutes > maxSaidaJogos) {
-        return {
-          valido: false,
-          motivo: `Horário de Saída para Jogos Digitais não permitido (Hora Oficial: ${agoraStr}). O ponto de saída deve ser registrado entre 15:40 e 16:20 (tolerância de 20 min para as 16h).`
-        };
-      }
-    } else {
-      // 17:00 -> 1020 min. Tolerância: 16:40 (1000 min) até 17:20 (1040 min)
-      const minSaidaGeral = 16 * 60 + 40;
-      const maxSaidaGeral = 17 * 60 + 20;
+    const minStr = `${String(Math.floor(minSaida / 60)).padStart(2, '0')}:${String(minSaida % 60).padStart(2, '0')}`;
+    const maxStr = `${String(Math.floor(maxSaida / 60)).padStart(2, '0')}:${String(maxSaida % 60).padStart(2, '0')}`;
+    const alvoStr = `${String(Math.floor(horaSaidaAlvoMin / 60)).padStart(2, '0')}:${String(horaSaidaAlvoMin % 60).padStart(2, '0')}`;
 
-      if (currentMinutes < minSaidaGeral || currentMinutes > maxSaidaGeral) {
-        return {
-          valido: false,
-          motivo: `Horário de Saída não permitido (Hora Oficial: ${agoraStr}). O ponto de saída deve ser registrado entre 16:40 e 17:20 (tolerância de 20 min para as 17h).`
-        };
-      }
+    if (currentMinutes < minSaida || currentMinutes > maxSaida) {
+      return {
+        valido: false,
+        motivo: `Horário de Saída para ${cursoNome || 'seu curso'} não permitido (Hora Oficial: ${agoraStr}). O ponto de saída deve ser registrado entre ${minStr} e ${maxStr} (tolerância de ${toleranciaMin} min para as ${alvoStr}).`
+      };
     }
-
     return { valido: true };
   }
 

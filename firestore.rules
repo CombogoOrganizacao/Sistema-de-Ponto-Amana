@@ -20,5 +20,11 @@ service cloud.firestore {
       allow create: if request.auth != null;
       allow update, delete: if request.auth != null && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.cargo == 'admin';
     }
+
+    // Regras de Cursos e Jornadas
+    match /cursos/{cursoId} {
+      allow read: if true; // Aberto para listagem no login/cadastro
+      allow create, update, delete: if request.auth != null && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.cargo == 'admin';
+    }
   }
 }

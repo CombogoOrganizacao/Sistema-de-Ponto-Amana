@@ -22,7 +22,7 @@ import { auth, db, ADMIN_EMAIL, renderIcons } from "./js/config.js";
 import { formatarDataChave, getServerTimeOffsetMs } from "./js/time-service.js";
 import { obterLocalizacaoAtual } from "./js/geo-service.js";
 import { registrarPontoWeb, atualizarEstadoBotoesPonto } from "./js/ponto-service.js";
-import { setupAdminReset } from "./js/admin-service.js";
+import { setupAdminReset, salvarCurso, renderAdminCursosTable, DEFAULT_CURSOS } from "./js/admin-service.js";
 import { setupPWAToast } from "./js/pwa-ui.js";
 import { renderPontosTable, renderAdminUsersTable, calcularHorasUsuario } from "./js/table-ui.js";
 
@@ -34,8 +34,10 @@ let currentUserProfile = null;
 let isCadastro = false;
 let unsubscribePontos = null;
 let unsubscribeUsers = null;
+let unsubscribeCursos = null;
 let allPontosData = [];
 let allUsersData = [];
+let allCursosData = [];
 
 // ==========================================
 // ELEMENTOS DO DOM
@@ -103,6 +105,15 @@ const geoStatusDot = document.getElementById("geo-status-dot");
 const geoStatusText = document.getElementById("geo-status-text");
 const btnRefreshLocation = document.getElementById("btn-refresh-location");
 const btnResetAllPoints = document.getElementById("btn-reset-all-points");
+
+// Gestão de Cursos Admin Elements
+const formAdminCurso = document.getElementById("form-admin-curso");
+const adminCursoNome = document.getElementById("admin-curso-nome");
+const adminCursoEntrada = document.getElementById("admin-curso-entrada");
+const adminCursoSaida = document.getElementById("admin-curso-saida");
+const adminCursoTolerancia = document.getElementById("admin-curso-tolerancia");
+const btnSalvarCurso = document.getElementById("btn-salvar-curso");
+const adminCursosTbody = document.getElementById("admin-cursos-tbody");
 
 // Inicializa Toast do PWA
 setupPWAToast({
@@ -350,6 +361,47 @@ btnRefreshLocation.addEventListener("click", () => {
   obterLocalizacaoAtual(geoStatusDot, geoStatusText).catch(() => {});
 });
 
+// Formulário de Adicionar / Salvar Curso (Admin)
+if (formAdminCurso) {
+  formAdminCurso.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!currentUserProfile || currentUserProfile.cargo !== "admin") {
+      alert("Apenas administradores podem gerenciar cursos.");
+      return;
+    }
+
+    const nome = adminCursoNome.value.trim();
+    const horaEntrada = adminCursoEntrada.value;
+    const horaSaida = adminCursoSaida.value;
+    const toleranciaMinutos = parseInt(adminCursoTolerancia.value, 10) || 20;
+
+    if (!nome) {
+      alert("Informe o nome do curso.");
+      return;
+    }
+
+    const originalBtn = btnSalvarCurso.innerHTML;
+    btnSalvarCurso.disabled = true;
+    btnSalvarCurso.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Salvando...</span>`;
+    renderIcons();
+
+    try {
+      await salvarCurso({ nome, horaEntrada, horaSaida, toleranciaMinutos });
+      formAdminCurso.reset();
+      adminCursoEntrada.value = "14:00";
+      adminCursoSaida.value = "17:00";
+      adminCursoTolerancia.value = "20";
+    } catch (err) {
+      console.error("Erro ao salvar curso:", err);
+      alert("Erro ao salvar curso: " + err.message);
+    } finally {
+      btnSalvarCurso.disabled = false;
+      btnSalvarCurso.innerHTML = originalBtn;
+      renderIcons();
+    }
+  });
+}
+
 // Bater Ponto Handlers
 btnBaterEntrada.addEventListener("click", () => {
   registrarPontoWeb({
@@ -357,6 +409,7 @@ btnBaterEntrada.addEventListener("click", () => {
     currentUserData,
     currentUserProfile,
     allPontosData,
+    listaCursos: allCursosData,
     btnBaterEntrada,
     btnBaterSaida,
     geoStatusDot,
@@ -371,6 +424,7 @@ btnBaterSaida.addEventListener("click", () => {
     currentUserData,
     currentUserProfile,
     allPontosData,
+    listaCursos: allCursosData,
     btnBaterEntrada,
     btnBaterSaida,
     geoStatusDot,
@@ -388,6 +442,27 @@ btnClearFilter.addEventListener("click", () => {
   filterDate.value = "";
   renderPontosTable(allPontosData, pontosTbody, emptyState, pontosCount, "");
 });
+
+// Atualiza opções dos selects de curso dinamicamente
+function updateCourseSelectOptions(cursos) {
+  const lista = (cursos && cursos.length > 0) ? cursos : DEFAULT_CURSOS;
+  
+  // Modal Select
+  const currentModalVal = modalSelectCurso.value;
+  modalSelectCurso.innerHTML = '<option value="" disabled selected>Escolha um curso</option>' + 
+    lista.map(c => `<option value="${c.nome}">${c.nome}</option>`).join("");
+  if (currentModalVal && lista.some(c => c.nome === currentModalVal)) {
+    modalSelectCurso.value = currentModalVal;
+  }
+
+  // Register Form Select
+  const currentInputVal = inputCurso.value;
+  inputCurso.innerHTML = '<option value="" disabled selected>Selecione seu curso</option>' + 
+    lista.map(c => `<option value="${c.nome}">${c.nome}</option>`).join("");
+  if (currentInputVal && lista.some(c => c.nome === currentInputVal)) {
+    inputCurso.value = currentInputVal;
+  }
+}
 
 // Atualização de UI do Header e Cards
 function updateHeaderUI() {
@@ -409,14 +484,43 @@ function updateHeaderUI() {
   const userCurso = currentUserProfile.curso || "Não informado";
   cardUserCurso.textContent = userCurso;
 
-  const isJogos = userCurso.toLowerCase().includes("jogos");
-  cardUserHorario.textContent = isJogos ? "14h às 16h (±20 min)" : "14h às 17h (±20 min)";
+  // Busca horário customizado do curso se houver
+  const configCurso = allCursosData.find(c => (c.nome || "").toLowerCase().trim() === userCurso.toLowerCase().trim());
+  if (configCurso) {
+    const ent = configCurso.horaEntrada || "14:00";
+    const sai = configCurso.horaSaida || "17:00";
+    const tol = configCurso.toleranciaMinutos ?? 20;
+    cardUserHorario.textContent = `${ent} às ${sai} (±${tol} min)`;
+  } else {
+    const isJogos = userCurso.toLowerCase().includes("jogos");
+    cardUserHorario.textContent = isJogos ? "14:00 às 16:00 (±20 min)" : "14:00 às 17:00 (±20 min)";
+  }
 }
 
 // Sincronização em Tempo Real com Firestore
 function syncRealtimeData() {
   if (unsubscribePontos) unsubscribePontos();
   if (unsubscribeUsers) unsubscribeUsers();
+  if (unsubscribeCursos) unsubscribeCursos();
+
+  // Escuta Cursos do Sistema
+  const cursosQuery = query(collection(db, "cursos"), orderBy("nome", "asc"));
+  unsubscribeCursos = onSnapshot(cursosQuery, (snap) => {
+    if (!snap.empty) {
+      allCursosData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } else {
+      allCursosData = [...DEFAULT_CURSOS];
+    }
+    
+    updateCourseSelectOptions(allCursosData);
+    renderAdminCursosTable(allCursosData, adminCursosTbody);
+    updateHeaderUI();
+  }, (err) => {
+    console.warn("Snapshot cursos fallback:", err);
+    allCursosData = [...DEFAULT_CURSOS];
+    updateCourseSelectOptions(allCursosData);
+    renderAdminCursosTable(allCursosData, adminCursosTbody);
+  });
 
   // Escuta registros de pontos
   const pontosQuery = query(collection(db, "pontos"), orderBy("registro", "desc"));
@@ -461,6 +565,9 @@ function syncRealtimeData() {
   });
 }
 
+// Inicializa select de cursos no load da página
+updateCourseSelectOptions(DEFAULT_CURSOS);
+
 // ==========================================
 // OBSERVER DE AUTENTICAÇÃO
 // ==========================================
@@ -504,6 +611,7 @@ onAuthStateChanged(auth, async (user) => {
     currentUserProfile = null;
     if (unsubscribePontos) unsubscribePontos();
     if (unsubscribeUsers) unsubscribeUsers();
+    if (unsubscribeCursos) unsubscribeCursos();
 
     authSection.classList.remove("hidden");
     dashboardSection.classList.add("hidden");
@@ -514,3 +622,4 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 renderIcons();
+
