@@ -18,13 +18,13 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
-import { auth, db, ADMIN_EMAIL, renderIcons } from "./config.js";
-import { formatarDataChave, getServerTimeOffsetMs } from "./time-service.js";
-import { obterLocalizacaoAtual } from "./geo-service.js";
-import { registrarPontoWeb, atualizarEstadoBotoesPonto } from "./ponto-service.js";
-import { setupAdminReset } from "./admin-service.js";
-import { setupPWAToast } from "./pwa-ui.js";
-import { renderPontosTable, renderAdminUsersTable, calcularHorasUsuario } from "./table-ui.js";
+import { auth, db, ADMIN_EMAIL, renderIcons } from "./js/config.js";
+import { formatarDataChave, getServerTimeOffsetMs } from "./js/time-service.js";
+import { obterLocalizacaoAtual } from "./js/geo-service.js";
+import { registrarPontoWeb, atualizarEstadoBotoesPonto } from "./js/ponto-service.js";
+import { setupAdminReset } from "./js/admin-service.js";
+import { setupPWAToast } from "./js/pwa-ui.js";
+import { renderPontosTable, renderAdminUsersTable, calcularHorasUsuario } from "./js/table-ui.js";
 
 // ==========================================
 // ESTADOS DA APLICAÇÃO
@@ -195,6 +195,32 @@ btnConfirmarCurso.addEventListener("click", async () => {
   }
 });
 
+function traduzirErroAuth(errorCode, defaultMsg) {
+  if (!errorCode) return defaultMsg || "Erro na autenticação.";
+  if (errorCode.includes("auth/invalid-credential") || errorCode.includes("auth/wrong-password") || errorCode.includes("auth/user-not-found")) {
+    return "E-mail ou senha incorretos. Verifique seus dados.";
+  }
+  if (errorCode.includes("auth/email-already-in-use")) {
+    return "Este e-mail já está cadastrado. Tente fazer login.";
+  }
+  if (errorCode.includes("auth/weak-password")) {
+    return "A senha deve ter pelo menos 6 caracteres.";
+  }
+  if (errorCode.includes("auth/invalid-email")) {
+    return "Formato de e-mail inválido.";
+  }
+  if (errorCode.includes("auth/popup-closed-by-user")) {
+    return "Login cancelado. A janela do Google foi fechada antes de concluir.";
+  }
+  if (errorCode.includes("auth/cancelled-popup-request")) {
+    return "Tentativa de login anterior cancelada.";
+  }
+  if (errorCode.includes("auth/unauthorized-domain")) {
+    return "Domínio não autorizado no Firebase Auth. Adicione o domínio da Vercel nas configurações de autenticação do Firebase.";
+  }
+  return defaultMsg || errorCode;
+}
+
 // Autenticação E-mail/Senha
 authForm.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -203,6 +229,11 @@ authForm.addEventListener("submit", async (e) => {
   const senha = inputSenha.value;
   const nome = inputNome.value.trim();
   const curso = inputCurso.value;
+
+  const originalSubmitText = btnAuthSubmit.innerHTML;
+  btnAuthSubmit.disabled = true;
+  btnAuthSubmit.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Aguarde...</span>`;
+  renderIcons();
 
   try {
     if (isCadastro) {
@@ -229,15 +260,26 @@ authForm.addEventListener("submit", async (e) => {
       await signInWithEmailAndPassword(auth, email, senha);
     }
   } catch (err) {
-    showError(err.message || "Erro na autenticação.");
+    console.error("Erro auth:", err);
+    showError(traduzirErroAuth(err.code || err.message, err.message));
+  } finally {
+    btnAuthSubmit.disabled = false;
+    btnAuthSubmit.innerHTML = originalSubmitText;
+    renderIcons();
   }
 });
 
 // Google Login
 btnGoogleLogin.addEventListener("click", async () => {
   showError("");
+  const originalGoogleText = btnGoogleLogin.innerHTML;
+  btnGoogleLogin.disabled = true;
+  btnGoogleLogin.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Conectando com Google...</span>`;
+  renderIcons();
+
   try {
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
     const res = await signInWithPopup(auth, provider);
     const email = (res.user.email || "").toLowerCase();
     
@@ -258,7 +300,12 @@ btnGoogleLogin.addEventListener("click", async () => {
       await updateDoc(userDocRef, { cargo: "admin" });
     }
   } catch (err) {
-    showError(err.message || "Erro ao entrar com o Google.");
+    console.error("Erro Google Login:", err);
+    showError(traduzirErroAuth(err.code || err.message, err.message));
+  } finally {
+    btnGoogleLogin.disabled = false;
+    btnGoogleLogin.innerHTML = originalGoogleText;
+    renderIcons();
   }
 });
 
