@@ -142,7 +142,7 @@ export default function HomeScreen() {
         <View className="justify-between h-full p-6">
           <View className="gap-6">
             <View className="mb-2">
-              <ThemedText type="title">Combogó Ponto</ThemedText>
+              <ThemedText type="title">Amana Lab Ponto</ThemedText>
               <ThemedText className="text-gray-400">
                 {isCadastro ? 'Crie sua conta institucional' : 'Faça login para bater seu ponto'}
               </ThemedText>

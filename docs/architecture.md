@@ -1,8 +1,8 @@
-# Arquitetura do Sistema - Combogó Ponto
+# Arquitetura do Sistema - Amana Lab Ponto
 
 ## Visão Geral
 
-O **Combogó Ponto** é uma solução completa de controle de jornada e gestão de presença desenvolvida para alunos e colaboradores da Amana Lab / UNICAP. O ecossistema é composto por:
+O **Amana Lab Ponto** é uma solução completa de controle de jornada e gestão de presença desenvolvida para alunos e colaboradores da Amana Lab / UNICAP. O ecossistema é composto por:
 
 1. **Front-end Web (PWA)**: Aplicação Web modularizada em Vanilla JS ES6 com Tailwind CSS e Firebase SDK client-side.
 2. **Front-end Mobile Native**: Aplicativo React Native (Expo) com suporte a iOS, Android e Web.
